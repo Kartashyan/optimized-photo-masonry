@@ -8,4 +8,8 @@ export class PhotoService {
   async fetchPhotos(query: string): Promise<Photo[]> {
     return this.photoRepository.fetchPhotos(query);
   }
+
+  async fetchPhotoById(id: string): Promise<Photo> {
+    return this.photoRepository.fetchPhotoById(id);
+  }
 }

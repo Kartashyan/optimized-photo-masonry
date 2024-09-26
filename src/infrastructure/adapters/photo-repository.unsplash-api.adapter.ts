@@ -19,6 +19,21 @@ export class UnsplashApiAdapter implements PhotoRepository {
     const data = await response.json() as { results: BasicPhoto[] };
     return data.results.map(PhotoMapper.toDomain);
   }
+
+  async fetchPhotoById(id: string) {
+    const response = await fetch(
+      `https://api.unsplash.com/photos/${id}?client_id=${ACCESS_KEY}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'max-age=604800', // Cache for 1 week
+      },
+      cache: 'force-cache',
+    }
+    );
+    const data = await response.json() as BasicPhoto;
+    return PhotoMapper.toDomain(data);
+  }
 }
 
 class PhotoMapper {

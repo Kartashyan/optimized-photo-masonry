@@ -7,7 +7,7 @@ const ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 export class UnsplashApiAdapter implements PhotoRepository {
   async fetchPhotos(query: string) {
     const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${query}&client_id=${ACCESS_KEY}`, {
+      `https://api.unsplash.com/search/photos?query=${query}&per_page=30&client_id=${ACCESS_KEY}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -50,6 +50,8 @@ class PhotoMapper {
       description: photo.description || "",
       alt_description: photo.alt_description || "",
       created_at: photo.created_at,
+      width: photo.width,
+      height: photo.height,
     };
   }
 }

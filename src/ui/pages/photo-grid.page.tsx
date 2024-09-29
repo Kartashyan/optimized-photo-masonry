@@ -12,6 +12,6 @@ export const PhotoGridPage: React.FC = () => {
   };
 
   return (
-    <MasonryGrid photos={photos} columns={3} onItemClick={handlePhotoClick}/>
+    <MasonryGrid photos={photos} onItemClick={handlePhotoClick}/>
   );
 };

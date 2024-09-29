@@ -1,66 +1,96 @@
-import React, { useCallback, useMemo, useRef } from "react";
+import React from "react";
 import styled from "styled-components";
 import { Photo } from "../../domain/photo";
+import { useResizeColumns } from "./hooks/use-size";
 
-type MasonryGridProps = {
+interface MasonryGridProps {
   photos: Photo[];
-  columns: number;
   onItemClick?: (id: Photo["id"]) => void;
-};
+}
 
-const Grid = styled.div<{ columns: number }>`
-  display: grid;
-  grid-template-columns: repeat(${(props) => props.columns}, 1fr);
-  grid-gap: 16px;
-  padding: 16px;
+const GridContainer = styled.div`
+  position: relative;
+  width: 100%;
 `;
 
-const GridItem = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== "spanRows",
-})<{ spanRows: number }>`
-  grid-row-end: span ${(props) => props.spanRows};
+const GridItem = styled.div<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}>`
+  position: absolute;
+  left: ${(props) => props.x}px;
+  top: ${(props) => props.y}px;
+  width: ${(props) => props.width}px;
+  height: ${(props) => props.height}px;
+  overflow: hidden;
+  border-radius: 16px;
 `;
 
 const Image = styled.img`
   width: 100%;
-  height: auto;
-  display: block;
+  height: 100%;
+  object-fit: cover;
 `;
 
-export const MasonryGrid: React.FC<MasonryGridProps> = ({
-  photos,
-  columns,
-  onItemClick: handleItemClick,
-}) => {
-  const gridRef = useRef<HTMLDivElement>(null);
+export const MasonryGrid: React.FC<MasonryGridProps> = ({ photos, onItemClick: handleItemClick }) => {
+  const { columns, columnWidth, gap } = useResizeColumns({ columnWidth: 236, gap: 8 });
 
-  const getSpanRows = useCallback(
-    (photo: Photo) => {
-      const aspectRatio = photo.height / photo.width;
-      return Math.ceil((aspectRatio * 100) / (100 / columns));
-    },
-    [columns]
-  );
+  const positions = calculatePositions(photos, columnWidth, columns, gap);
 
-  const memoizedPhotos = useMemo(() => {
-    return photos.map((photo) => ({
-      ...photo,
-      spanRows: getSpanRows(photo),
-    }));
-  }, [photos, getSpanRows]);
+  // Calculate total height
+  const totalHeight = Math.max(...positions.map((pos) => pos.y + pos.height));
 
   return (
-    <Grid ref={gridRef} columns={columns} data-testid="masonry-grid">
-      {memoizedPhotos.map((photo, index) => (
+    <GridContainer style={{ height: totalHeight }}>
+      {positions.map((item) => (
         <GridItem
-          key={photo.id}
-          spanRows={photo.spanRows}
-          onClick={() => handleItemClick && handleItemClick(photo.id)}
-          data-testid={`grid-item-${index}`}
+          key={item.id}
+          x={item.x}
+          y={item.y}
+          width={item.width}
+          height={item.height}
+          data-testid={`grid-item-${item.id}`}
+          onClick={() => handleItemClick?.(item.id)}
         >
-          <Image src={photo.urls.small} alt={photo.alt_description} />
+          <Image src={item.urls.small} alt="" />
         </GridItem>
       ))}
-    </Grid>
+    </GridContainer>
   );
 };
+
+export default MasonryGrid;
+
+function calculatePositions<T extends { width: number; height: number }>(
+  items: T[],
+  columnWidth: number,
+  columnCount: number,
+  gap: number
+) {
+  
+  const columnHeights = Array(columnCount).fill(0); // Array to keep track of the height of each column
+  const positions = items.map((item) => {
+
+    const aspectRatio = item.width / item.height;
+    const height = columnWidth / aspectRatio;
+
+    const column = columnHeights.indexOf(Math.min(...columnHeights)); // Find the shortest column
+
+    const x = column * (columnWidth + gap);
+    const y = columnHeights[column];
+
+    columnHeights[column] += height + gap; // Update the column height
+
+    return {
+      ...item,
+      x,
+      y,
+      width: columnWidth,
+      height,
+    };
+  });
+
+  return positions;
+}

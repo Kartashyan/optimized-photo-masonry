@@ -12,13 +12,20 @@ export const router = createBrowserRouter([
     errorElement: <div>Not Found</div>,
     children: [
       {
-        path: "",
+        index: true,
         element: <PhotoGridPage />,
         loader: masonryGridLoader,
         errorElement: <div>Failed to load photos</div>,
       },
       {
-        path: "photo/:id",
+        path: "photos",
+        element: <PhotoGridPage />,
+        loader: masonryGridLoader,
+
+        errorElement: <div>Failed to load photos</div>,
+      },
+      {
+        path: "photos/:id",
         element: <PhotoDetailsPage />,
         loader: photoDetailsLoader,
         errorElement: <div>Failed to load photo</div>,

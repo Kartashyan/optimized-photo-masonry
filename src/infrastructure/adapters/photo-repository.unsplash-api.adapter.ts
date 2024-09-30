@@ -5,9 +5,9 @@ import { BasicPhoto } from "./unsplash";
 const ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
 export class UnsplashApiAdapter implements PhotoRepository {
-  async fetchPhotos(query: string) {
+  async fetchPhotos(query: string, options?: { page: number }) {
     const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${query}&per_page=30&client_id=${ACCESS_KEY}`, {
+      `https://api.unsplash.com/search/photos?query=${query}&per_page=30&page=${options?.page || 1}&client_id=${ACCESS_KEY}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -16,8 +16,23 @@ export class UnsplashApiAdapter implements PhotoRepository {
       cache: 'force-cache',
     }
     );
+    const linksHeaderString = response.headers.get('Link');
+    const pagination = linksHeaderString?.split(',').reduce((acc, link) => {
+      const [url, rel] = link.split(';').map((s) => s.trim());
+      const urlMatch = url.match(/<(.+)>/);
+      const relMatch = rel.match(/"(.+)"/);
+      if (urlMatch && relMatch) {
+        const url = new URL(urlMatch[1]);
+        const page = url.searchParams.get('page');
+        acc[relMatch[1]] = String(page);
+      }
+      return acc;
+    }
+      , {} as Record<string, string>) || {};
+    console.log("linkHeader", pagination);
     const data = await response.json() as { results: BasicPhoto[] };
-    return data.results.map(PhotoMapper.toDomain);
+
+    return { photos: data.results.map(PhotoMapper.toDomain), pagination };
   }
 
   async fetchPhotoById(id: string) {

@@ -5,8 +5,8 @@ export class PhotoService {
   constructor(private photoRepository: PhotoRepository) {
     this.photoRepository = photoRepository;
   }
-  async fetchPhotos(query: string): Promise<Photo[]> {
-    return this.photoRepository.fetchPhotos(query);
+  async fetchPhotos(query: string, options: { page: number }): Promise<{photos: Photo[]; pagination: Record<string, string>}> {
+    return this.photoRepository.fetchPhotos(query, options);
   }
 
   async fetchPhotoById(id: string): Promise<Photo> {

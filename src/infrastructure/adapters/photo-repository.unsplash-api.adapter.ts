@@ -24,11 +24,11 @@ export class UnsplashApiAdapter implements PhotoRepository {
       if (urlMatch && relMatch) {
         const url = new URL(urlMatch[1]);
         const page = url.searchParams.get('page');
-        acc[relMatch[1]] = String(page);
+        acc[relMatch[1]] = Number(page);
       }
       return acc;
     }
-      , {} as Record<string, string>) || {};
+      , {} as Record<string, number>) || {};
     console.log("linkHeader", pagination);
     const data = await response.json() as { results: BasicPhoto[] };
 

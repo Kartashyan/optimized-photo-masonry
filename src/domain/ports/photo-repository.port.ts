@@ -1,6 +1,6 @@
 import { Photo } from "../photo";
 
-type Pagination = Record<string, string>;
+type Pagination = Record<string, number>;
 type FetchListResult<T> = { photos: T[]; pagination: Pagination };
 export type PhotoListResult = FetchListResult<Photo>;
 

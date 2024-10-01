@@ -95,8 +95,9 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   );
 
   // Calculate visible items
-  const visibleStart = scrollTop;
-  const visibleEnd = scrollTop + viewportHeight;
+  const buffer = 200; // Extra buffer to load items before they are visible
+  const visibleStart = scrollTop - buffer;
+  const visibleEnd = scrollTop + viewportHeight + buffer;
 
   const visiblePositions = useMemo(
     () =>

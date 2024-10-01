@@ -1,11 +1,11 @@
 import { Photo } from "../../domain/photo";
-import { PhotoRepository } from "../../domain/ports/photo-repository.port";
+import { PhotoListResult, PhotoRepository } from "../../domain/ports/photo-repository.port";
 import { BasicPhoto } from "./unsplash";
 
 const ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
 export class UnsplashApiAdapter implements PhotoRepository {
-  async fetchPhotos(query: string, options?: { page: number }) {
+  async fetchPhotos(query: string, options?: { page: number }): Promise<PhotoListResult> {
     const response = await fetch(
       `https://api.unsplash.com/search/photos?query=${query}&per_page=30&page=${options?.page || 1}&client_id=${ACCESS_KEY}`, {
       method: 'GET',

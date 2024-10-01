@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import styled from "styled-components";
 import { Photo } from "../../domain/photo";
-import { useResizeColumns } from "./hooks/use-size";
+import { useResizeColumns } from "./hooks/use-resize-columns";
 
 interface MasonryGridProps {
   photos: Photo[];
@@ -34,13 +34,23 @@ const Image = styled.img`
   object-fit: cover;
 `;
 
-export const MasonryGrid: React.FC<MasonryGridProps> = ({ photos, onItemClick: handleItemClick }) => {
-  const { columns, columnWidth, gap } = useResizeColumns({ columnWidth: 236, gap: 8 });
+export const MasonryGrid: React.FC<MasonryGridProps> = ({
+  photos: allPhotos,
+  onItemClick: handleItemClick,
+}) => {
+  const { columns, columnWidth, gap } = useResizeColumns({
+    columnWidth: 236,
+    gap: 8,
+  });
 
-  const positions = calculatePositions(photos, columnWidth, columns, gap);
-
-  // Calculate total height
-  const totalHeight = Math.max(...positions.map((pos) => pos.y + pos.height));
+  const positions = useMemo(
+    () => calculatePositions(allPhotos, columnWidth, columns, gap),
+    [allPhotos, columns, columnWidth, gap]
+  );
+  const totalHeight = useMemo(
+    () => Math.max(...positions.map((pos) => pos.y + pos.height)),
+    [positions]
+  );
 
   return (
     <GridContainer style={{ height: totalHeight }}>
@@ -69,10 +79,8 @@ function calculatePositions<T extends { width: number; height: number }>(
   columnCount: number,
   gap: number
 ) {
-  
-  const columnHeights = Array(columnCount).fill(0); // Array to keep track of the height of each column
+  const columnHeights = Array<number>(columnCount).fill(0); // Array to keep track of the height of each column
   const positions = items.map((item) => {
-
     const aspectRatio = item.width / item.height;
     const height = columnWidth / aspectRatio;
 

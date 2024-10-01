@@ -1,10 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useInitialPhotosBeforeRender } from "../components/hooks/use-initial-photos-before-render";
+import { usePhotosQuery } from "../components/hooks/use-photos-query";
 import { MasonryGrid } from "../components/masonry-grid";
 
 export const PhotoGridPage: React.FC = () => {
-  const initialData = useInitialPhotosBeforeRender();
+  const { photos } = usePhotosQuery();
 
   const navigate = useNavigate();
 
@@ -12,7 +12,5 @@ export const PhotoGridPage: React.FC = () => {
     navigate(`/photos/${id}`);
   };
 
-  return (
-    <MasonryGrid photos={initialData.photos} onItemClick={handlePhotoClick} />
-  );
+  return <MasonryGrid photos={photos} onItemClick={handlePhotoClick} />;
 };

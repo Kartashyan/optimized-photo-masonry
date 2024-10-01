@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import styled from "styled-components";
 import { Photo } from "../../domain/photo";
 import { useResizeColumns } from "./hooks/use-resize-columns";
@@ -36,6 +42,12 @@ const Image = styled.img`
   object-fit: cover;
 `;
 
+const Sentinel = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 1px; /* Minimal height to be observed */
+`;
+
 export const MasonryGrid: React.FC<MasonryGridProps> = ({
   photos: allPhotos,
   onItemClick: handleItemClick,
@@ -48,6 +60,31 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   });
   const observer = useRef<IntersectionObserver | null>(null);
 
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      setViewportHeight(window.innerHeight);
+    };
+    updateViewportHeight();
+    window.addEventListener("resize", updateViewportHeight);
+    return () => {
+      window.removeEventListener("resize", updateViewportHeight);
+    };
+  }, []);
+
+  const handleScroll = useCallback(() => {
+      setScrollTop(window.scrollY);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: false });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [handleScroll]);
+
   const positions = useMemo(
     () => calculatePositions(allPhotos, columnWidth, columns, gap),
     [allPhotos, columns, columnWidth, gap]
@@ -57,38 +94,55 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     [positions]
   );
 
+  // Calculate visible items
+  const visibleStart = scrollTop;
+  const visibleEnd = scrollTop + viewportHeight;
+
+  const visiblePositions = useMemo(
+    () =>
+      positions.filter(
+        (pos) => pos.y + pos.height > visibleStart && pos.y < visibleEnd
+      ),
+    [positions, visibleStart, visibleEnd]
+  );
+
   const lastItemRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (loading) return;
       if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      });
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            loadMore();
+          }
+        },
+      );
       if (node) observer.current.observe(node);
     },
     [loading, loadMore]
   );
 
+  useEffect(() => {
+    if (totalHeight < viewportHeight && !loading) {
+      loadMore();
+    }
+  }, [totalHeight, viewportHeight, loading, loadMore]);
+
   return (
     <GridContainer style={{ height: totalHeight }}>
-      {positions.map((item, index) => {
-        const isLastItem = index === allPhotos.length - 1;
-        return (
-          <GridItem
-            key={allPhotos[index].id}
-            x={item.x}
-            y={item.y}
-            width={item.width}
-            height={item.height}
-            ref={isLastItem ? lastItemRef : undefined}
-            onClick={() => handleItemClick?.(allPhotos[index].id)}
-          >
-            <Image src={allPhotos[index].urls.small} />
-          </GridItem>
-        );
-      })}
+      {visiblePositions.map((item) => (
+        <GridItem
+          key={allPhotos[item.index].id}
+          x={item.x}
+          y={item.y}
+          width={item.width}
+          height={item.height}
+          onClick={() => handleItemClick?.(allPhotos[item.index].id)}
+        >
+          <Image src={allPhotos[item.index].urls.small} />
+        </GridItem>
+      ))}
+      <Sentinel ref={lastItemRef} style={{ top: totalHeight }} />
     </GridContainer>
   );
 };
@@ -102,7 +156,7 @@ function calculatePositions<T extends { width: number; height: number }>(
   gap: number
 ) {
   const columnHeights = Array<number>(columnCount).fill(0); // Array to keep track of the height of each column
-  const positions = items.map((item) => {
+  const positions = items.map((item, index) => {
     const aspectRatio = item.width / item.height;
     const height = columnWidth / aspectRatio;
 
@@ -115,6 +169,7 @@ function calculatePositions<T extends { width: number; height: number }>(
 
     return {
       ...item,
+      index,
       x,
       y,
       width: columnWidth,

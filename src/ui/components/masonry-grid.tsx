@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { Photo } from "../../domain/photo";
 import { useResizeColumns } from "./hooks/use-resize-columns";
@@ -6,6 +6,8 @@ import { useResizeColumns } from "./hooks/use-resize-columns";
 interface MasonryGridProps {
   photos: Photo[];
   onItemClick?: (id: Photo["id"]) => void;
+  loadMore: () => void;
+  loading: boolean;
 }
 
 const GridContainer = styled.div`
@@ -37,11 +39,14 @@ const Image = styled.img`
 export const MasonryGrid: React.FC<MasonryGridProps> = ({
   photos: allPhotos,
   onItemClick: handleItemClick,
+  loadMore,
+  loading,
 }) => {
   const { columns, columnWidth, gap } = useResizeColumns({
     columnWidth: 236,
     gap: 8,
   });
+  const observer = useRef<IntersectionObserver | null>(null);
 
   const positions = useMemo(
     () => calculatePositions(allPhotos, columnWidth, columns, gap),
@@ -52,21 +57,38 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     [positions]
   );
 
+  const lastItemRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, loadMore]
+  );
+
   return (
     <GridContainer style={{ height: totalHeight }}>
-      {positions.map((item) => (
-        <GridItem
-          key={item.id}
-          x={item.x}
-          y={item.y}
-          width={item.width}
-          height={item.height}
-          data-testid={`grid-item-${item.id}`}
-          onClick={() => handleItemClick?.(item.id)}
-        >
-          <Image src={item.urls.small} alt="" />
-        </GridItem>
-      ))}
+      {positions.map((item, index) => {
+        const isLastItem = index === allPhotos.length - 1;
+        return (
+          <GridItem
+            key={allPhotos[index].id}
+            x={item.x}
+            y={item.y}
+            width={item.width}
+            height={item.height}
+            ref={isLastItem ? lastItemRef : undefined}
+            onClick={() => handleItemClick?.(allPhotos[index].id)}
+          >
+            <Image src={allPhotos[index].urls.small} />
+          </GridItem>
+        );
+      })}
     </GridContainer>
   );
 };

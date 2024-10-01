@@ -4,7 +4,7 @@ import { usePhotosQuery } from "../components/hooks/use-photos-query";
 import { MasonryGrid } from "../components/masonry-grid";
 
 export const PhotoGridPage: React.FC = () => {
-  const { photos } = usePhotosQuery();
+  const { photos, loadMore, loading } = usePhotosQuery();
 
   const navigate = useNavigate();
 
@@ -12,5 +12,12 @@ export const PhotoGridPage: React.FC = () => {
     navigate(`/photos/${id}`);
   };
 
-  return <MasonryGrid photos={photos} onItemClick={handlePhotoClick} />;
+  return (
+    <MasonryGrid
+      photos={photos}
+      onItemClick={handlePhotoClick}
+      loadMore={loadMore}
+      loading={loading}
+    />
+  );
 };

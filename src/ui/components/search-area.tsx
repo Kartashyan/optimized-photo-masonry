@@ -1,5 +1,21 @@
 import styled from "styled-components";
 
+export const SearchArea: React.FC<{
+  setSearchText: (text: string) => void;
+}> = ({ setSearchText }) => {
+  return (
+    <SearchHeader>
+      <StyledWrapper>
+        <StyledInput
+          type="text"
+          placeholder="Search"
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+      </StyledWrapper>
+    </SearchHeader>
+  );
+};
+
 const SearchHeader = styled.header`
   position: fixed;
   display: flex;
@@ -33,19 +49,3 @@ const StyledInput = styled.input`
   margin-bottom: 16px;
   border-radius: 16px;
 `;
-
-export const SearchArea: React.FC<{
-  setSearchText: (text: string) => void;
-}> = ({ setSearchText }) => {
-  return (
-    <SearchHeader>
-      <StyledWrapper>
-        <StyledInput
-          type="text"
-          placeholder="Search"
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-      </StyledWrapper>
-    </SearchHeader>
-  );
-};

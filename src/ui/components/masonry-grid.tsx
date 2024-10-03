@@ -17,41 +17,6 @@ interface MasonryGridProps {
   top?: number;
 }
 
-const GridContainer = styled.div<{ top: number; gridWidth: number }>`
-  position: relative;
-  top: ${(props) => props.top}px;
-  width: ${(props) => props.gridWidth}px;
-  margin: 0 auto;
-  transition: width 0.2s ease-in-out;
-`;
-
-const GridItem = styled.div<{
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}>`
-  position: absolute;
-  left: ${(props) => props.x}px;
-  top: ${(props) => props.y}px;
-  width: ${(props) => props.width}px;
-  height: ${(props) => props.height}px;
-  overflow: hidden;
-  border-radius: 16px;
-`;
-
-const Image = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
-
-const Sentinel = styled.div`
-  position: absolute;
-  width: 100%;
-  height: 1px; /* Minimal height to be observed */
-`;
-
 export const MasonryGrid: React.FC<MasonryGridProps> = ({
   photos: allPhotos,
   onItemClick: handleItemClick,
@@ -194,3 +159,38 @@ function calculatePositions<T extends { width: number; height: number }>(
 
   return positions;
 }
+
+const GridContainer = styled.div<{ top: number; gridWidth: number }>`
+  position: relative;
+  top: ${(props) => props.top}px;
+  width: ${(props) => props.gridWidth}px;
+  margin: 0 auto;
+  transition: width 0.2s ease-in-out;
+`;
+
+const GridItem = styled.div<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}>`
+  position: absolute;
+  left: ${(props) => props.x}px;
+  top: ${(props) => props.y}px;
+  width: ${(props) => props.width}px;
+  height: ${(props) => props.height}px;
+  overflow: hidden;
+  border-radius: 16px;
+`;
+
+const Image = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+const Sentinel = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 1px; /* Minimal height to be observed */
+`;

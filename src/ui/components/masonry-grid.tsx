@@ -14,10 +14,12 @@ interface MasonryGridProps {
   onItemClick?: (id: Photo["id"]) => void;
   loadMore: () => void;
   loading: boolean;
+  top?: number;
 }
 
-const GridContainer = styled.div`
+const GridContainer = styled.div<{ top: number }>`
   position: relative;
+  top: ${(props) => props.top}px;
   width: 100%;
 `;
 
@@ -53,6 +55,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   onItemClick: handleItemClick,
   loadMore,
   loading,
+  top = 0,
 }) => {
   const { columns, columnWidth, gap } = useResizeColumns({
     columnWidth: 236,
@@ -75,7 +78,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   }, []);
 
   const handleScroll = useCallback(() => {
-      setScrollTop(window.scrollY);
+    setScrollTop(window.scrollY);
   }, []);
 
   useEffect(() => {
@@ -111,13 +114,11 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     (node: HTMLDivElement | null) => {
       if (loading) return;
       if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            loadMore();
-          }
-        },
-      );
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      });
       if (node) observer.current.observe(node);
     },
     [loading, loadMore]
@@ -130,7 +131,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   }, [totalHeight, viewportHeight, loading, loadMore]);
 
   return (
-    <GridContainer style={{ height: totalHeight }}>
+    <GridContainer style={{ height: totalHeight }} top={top}>
       {visiblePositions.map((item) => (
         <GridItem
           key={allPhotos[item.index].id}
@@ -143,7 +144,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
           <Image src={allPhotos[item.index].urls.small} />
         </GridItem>
       ))}
-      <Sentinel ref={lastItemRef} style={{ top: totalHeight }} />
+      <Sentinel ref={lastItemRef} style={{ top: totalHeight - top }} />
     </GridContainer>
   );
 };

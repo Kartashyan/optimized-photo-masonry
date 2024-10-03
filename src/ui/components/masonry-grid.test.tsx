@@ -13,37 +13,71 @@ import "@testing-library/jest-dom";
 import MasonryGrid from "./masonry-grid";
 
 beforeAll(() => {
-  class IntersectionObserverMock {
-    constructor(callback) {
+  class IntersectionObserverMock implements IntersectionObserver {
+    root: Element | Document | null;
+    rootMargin: string;
+    thresholds: ReadonlyArray<number>;
+    callback: IntersectionObserverCallback;
+
+    constructor(
+      callback: IntersectionObserverCallback,
+      options?: IntersectionObserverInit
+    ) {
       this.callback = callback;
+      this.root = options?.root ?? null;
+      this.rootMargin = options?.rootMargin ?? '';
+      this.thresholds = options?.threshold
+        ? Array.isArray(options.threshold)
+          ? options.threshold
+          : [options.threshold]
+        : [];
     }
-    observe(element) {
+
+    observe(element: Element): void {
       setTimeout(() => {
-        this.callback([{ isIntersecting: true, target: element }], this);
+        const entry: IntersectionObserverEntry = {
+          time: Date.now(),
+          target: element,
+          rootBounds: null,
+          boundingClientRect: element.getBoundingClientRect(),
+          intersectionRect: element.getBoundingClientRect(),
+          intersectionRatio: 1,
+          isIntersecting: true,
+        };
+        this.callback([entry], this);
       }, 0);
     }
-    unobserve() {}
-    disconnect() {}
-    takeRecords() {
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    unobserve(element: Element): void {}
+    disconnect(): void {}
+    takeRecords(): IntersectionObserverEntry[] {
       return [];
     }
   }
-  Object.defineProperty(window, "IntersectionObserver", {
+
+  Object.defineProperty(window, 'IntersectionObserver', {
     writable: true,
     configurable: true,
     value: IntersectionObserverMock,
   });
 });
 
-describe("MasonryGrid Component", () => {
+describe('MasonryGrid Component', () => {
   const photos: Photo[] = Array.from({ length: 20 }, (_, index) => ({
     id: `photo-${index}`,
     width: 400 + index * 10,
     height: 300 + index * 5,
     urls: {
       small: `https://example.com/photo-${index}-small.jpg`,
+      full: `https://example.com/photo-${index}-full.jpg`,
     },
-    
+    user: {
+      name: `User ${index}`,
+    },
+    description: `Description for photo ${index}`,
+    alt_description: `Alt description for photo ${index}`,
+    created_at: new Date().toISOString(),
   }));
 
   const loadMoreMock = vi.fn();
@@ -55,8 +89,8 @@ describe("MasonryGrid Component", () => {
     window.innerHeight = 768;
     window.scrollY = 0;
 
-    vi.spyOn(window, "addEventListener");
-    vi.spyOn(window, "removeEventListener");
+    vi.spyOn(window, 'addEventListener');
+    vi.spyOn(window, 'removeEventListener');
   });
 
   afterEach(() => {
@@ -138,6 +172,7 @@ describe("MasonryGrid Component", () => {
       />
     );
 
+    // Get updated margin
     const updatedStyle = window.getComputedStyle(gridContainer!);
     expect(updatedStyle.marginLeft).toEqual("auto");
     expect(updatedStyle.marginRight).toEqual("auto");
@@ -173,6 +208,7 @@ describe("MasonryGrid Component", () => {
       />
     );
 
+    // Check the number of images rendered
     const images = screen.getAllByRole("img");
     expect(images.length).toBeLessThanOrEqual(photos.length);
   });

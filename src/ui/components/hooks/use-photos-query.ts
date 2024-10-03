@@ -1,37 +1,67 @@
 import { useEffect, useState } from "react";
 import { Photo } from "../../../domain/photo";
-import { useInitialPhotosBeforeRender } from "./use-initial-photos-before-render";
-import { useFetcher } from "react-router-dom";
+import { useDebounce } from "./use-debounce";
+import { photoService } from "../../../services/photo.service";
+import { type Pagination } from './../../../domain/ports/photo-repository.port';
 
-export const usePhotosQuery = () => {
-  const initialData = useInitialPhotosBeforeRender();
-  const fetcher = useFetcher();
+export const usePhotosQuery = (query: string) => {
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
 
-  const [photos, setPhotos] = useState<Photo[]>(initialData.photos);
-  const [pagination, setPagination] = useState<Record<string, number>>({ next: 2 });
+  const debouncedQuery = useDebounce(query, 500);
 
   useEffect(() => {
-    if (!fetcher.data || fetcher.state === "loading") {
-      return;
-    }
-    if (fetcher.data) {
-      const newPhotos = [...(fetcher.data.photos as Photo[])];
-      setPhotos((prev) => [...prev, ...newPhotos]);
-      setPagination(fetcher.data.pagination);
-    }
-  }, [fetcher, fetcher.data, fetcher.state]);
+    setPhotos([]);
+    setPage(1);
+    setPagination(null);
+  }, [debouncedQuery]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const fetchPhotos = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const result = await photoService.fetchPhotos(
+          { page, query: debouncedQuery },
+          { signal: abortController.signal }
+        );
+
+        setPhotos((prevPhotos) => [...prevPhotos, ...result.photos]);
+        setPagination(result.pagination);
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          // Request was aborted; no need to update state
+          return;
+        }
+
+        if (err instanceof Error) {
+          setError(err);
+        } else {
+          setError(new Error('An unexpected error occurred'));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPhotos();
+
+    return () => {
+      abortController.abort();
+    };
+  }, [debouncedQuery, page]);
 
   const loadMore = () => {
-    console.log("load more");
-    const page = pagination.next;
-    const hasMore = !!pagination.next;
-    if (!hasMore) {
-      console.log("no more");
-      return;
+    if (pagination?.next) {
+      setPage(pagination.next);
     }
-    fetcher.load(`/photos?page=${page}`);
   };
-  const loading = fetcher.state === "loading";
 
-  return { photos, loading, loadMore };
-}
+  return { photos, loading, loadMore, error };
+};

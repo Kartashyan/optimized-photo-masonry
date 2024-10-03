@@ -1,5 +1,4 @@
 import { createBrowserRouter } from "react-router-dom";
-import { loader as masonryGridLoader } from "./masonry-grid.loader";
 import { loader as photoDetailsLoader } from "./photo-details.loader";
 import App from "../App";
 import { PhotoGridPage } from "../ui/pages/photo-grid.page";
@@ -14,14 +13,11 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <PhotoGridPage />,
-        loader: masonryGridLoader,
         errorElement: <div>Failed to load photos</div>,
       },
       {
         path: "photos",
         element: <PhotoGridPage />,
-        loader: masonryGridLoader,
-
         errorElement: <div>Failed to load photos</div>,
       },
       {

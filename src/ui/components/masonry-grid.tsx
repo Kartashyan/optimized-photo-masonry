@@ -17,10 +17,12 @@ interface MasonryGridProps {
   top?: number;
 }
 
-const GridContainer = styled.div<{ top: number }>`
+const GridContainer = styled.div<{ top: number; gridWidth: number }>`
   position: relative;
   top: ${(props) => props.top}px;
-  width: 100%;
+  width: ${(props) => props.gridWidth}px;
+  margin: 0 auto;
+  transition: width 0.2s ease-in-out;
 `;
 
 const GridItem = styled.div<{
@@ -61,7 +63,11 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     columnWidth: 236,
     gap: 8,
   });
-  const observer = useRef<IntersectionObserver | null>(null);
+
+  const totalGridWidth = useMemo(
+    () => columns * columnWidth + (columns - 1) * gap,
+    [columns, columnWidth, gap]
+  );
 
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
@@ -92,6 +98,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     () => calculatePositions(allPhotos, columnWidth, columns, gap),
     [allPhotos, columns, columnWidth, gap]
   );
+
   const totalHeight = useMemo(
     () => Math.max(...positions.map((pos) => pos.y + pos.height)),
     [positions]
@@ -109,6 +116,8 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
       ),
     [positions, visibleStart, visibleEnd]
   );
+
+  const observer = useRef<IntersectionObserver | null>(null);
 
   const lastItemRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -131,7 +140,11 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   }, [totalHeight, viewportHeight, loading, loadMore]);
 
   return (
-    <GridContainer style={{ height: totalHeight }} top={top}>
+    <GridContainer
+      top={top}
+      gridWidth={totalGridWidth}
+      style={{ height: totalHeight }}
+    >
       {visiblePositions.map((item) => (
         <GridItem
           key={allPhotos[item.index].id}
@@ -157,17 +170,17 @@ function calculatePositions<T extends { width: number; height: number }>(
   columnCount: number,
   gap: number
 ) {
-  const columnHeights = Array<number>(columnCount).fill(0); // Array to keep track of the height of each column
+  const columnHeights = Array<number>(columnCount).fill(0); // Keep track of column heights
   const positions = items.map((item, index) => {
     const aspectRatio = item.width / item.height;
     const height = columnWidth / aspectRatio;
 
-    const column = columnHeights.indexOf(Math.min(...columnHeights)); // Find the shortest column
+    const column = columnHeights.indexOf(Math.min(...columnHeights)); // Shortest column
 
     const x = column * (columnWidth + gap);
     const y = columnHeights[column];
 
-    columnHeights[column] += height + gap; // Update the column height
+    columnHeights[column] += height + gap; // Update column height
 
     return {
       ...item,

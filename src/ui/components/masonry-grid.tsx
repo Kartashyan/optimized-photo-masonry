@@ -89,7 +89,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
       if (loading) return;
       if (observer.current) observer.current.disconnect();
       observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
+        if (entries[0].isIntersecting && !loading) {
           loadMore();
         }
       });

@@ -4,8 +4,10 @@ import { UnsplashApiAdapter } from "./adapters/photo-repository.unsplash-api.ada
 
 export const loader: LoaderFunction = async ({ request }) => {
   const photoService = new PhotoService(new UnsplashApiAdapter()); // Injecting the dependency here
+
   const query = new URL(request.url).searchParams.get("query") || "cats";
   const page = Number(new URL(request.url).searchParams.get("page")) || 1;
-  const result = await photoService.fetchPhotos(query, { page });
+
+  const result = await photoService.fetchPhotos({ query, page }, { signal: request.signal });
   return result;
 };

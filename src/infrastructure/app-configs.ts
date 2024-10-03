@@ -12,3 +12,11 @@ export const appConfigs = {
 };
 
 export type AppConfigs = typeof appConfigs;
+
+if (!ACCESS_KEY) {
+  throw new Error('Unsplash access key is missing');
+}
+
+if (!API_URL) {
+  throw new Error('Unsplash API URL is missing');
+}

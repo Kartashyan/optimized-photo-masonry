@@ -49,7 +49,7 @@ beforeAll(() => {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    unobserve(element: Element): void {}
+    unobserve(_element: Element): void {}
     disconnect(): void {}
     takeRecords(): IntersectionObserverEntry[] {
       return [];
@@ -231,17 +231,15 @@ describe('MasonryGrid Component', () => {
   });
 
   test("does not call loadMore when loading is true", async () => {
+    const newLoadMoreMock = vi.fn();
     render(
       <MasonryGrid
         photos={photos}
         onItemClick={vi.fn()}
-        loadMore={loadMoreMock}
+        loadMore={newLoadMoreMock}
         loading={true}
       />
     );
-
-    // Reset the mock calls after initial rendering
-    loadMoreMock.mockClear();
 
     await act(async () => {
       window.scrollY = 1000;
@@ -250,6 +248,6 @@ describe('MasonryGrid Component', () => {
 
     await act(async () => {});
 
-    expect(loadMoreMock).not.toHaveBeenCalled();
+    expect(newLoadMoreMock).not.toHaveBeenCalled();
   });
 });

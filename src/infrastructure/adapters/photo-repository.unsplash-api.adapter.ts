@@ -1,53 +1,123 @@
+import { appConfigs } from './../app-configs';
 import { Photo } from "../../domain/photo";
-import { PhotoListResult, PhotoRepository } from "../../domain/ports/photo-repository.port";
+import { PhotoListResult, PhotoRepository, PhotoSearch } from "../../domain/ports/photo-repository.port";
 import { BasicPhoto } from "./unsplash";
 
-const ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
-
 export class UnsplashApiAdapter implements PhotoRepository {
-  async fetchPhotos(query: string, options?: { page: number }): Promise<PhotoListResult> {
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${query}&per_page=30&page=${options?.page || 1}&client_id=${ACCESS_KEY}`, {
+  private createRequest(search: PhotoSearch, options?: { signal: AbortSignal }): Request {
+    const { per_page = 30, page, query } = search;
+
+    const params = new URLSearchParams({
+      per_page: String(per_page),
+      page: String(page),
+      query: query.trim() || "cats",
+    });
+
+    const url = new URL(appConfigs.API_URL);
+    url.search = params.toString();
+
+    return new Request(url.toString(), {
       method: 'GET',
+      signal: options?.signal,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'max-age=604800', // Cache for 1 week
+        'Authorization': `Client-ID ${appConfigs.ACCESS_KEY}`,
+        'Cache-Control': 'max-age=604800', // 1 week
       },
-      cache: 'force-cache',
-    }
-    );
-    const linksHeaderString = response.headers.get('Link');
-    const pagination = linksHeaderString?.split(',').reduce((acc, link) => {
-      const [url, rel] = link.split(';').map((s) => s.trim());
-      const urlMatch = url.match(/<(.+)>/);
-      const relMatch = rel.match(/"(.+)"/);
-      if (urlMatch && relMatch) {
-        const url = new URL(urlMatch[1]);
-        const page = url.searchParams.get('page');
-        acc[relMatch[1]] = Number(page);
-      }
-      return acc;
-    }
-      , {} as Record<string, number>) || {};
-    console.log("linkHeader", pagination);
-    const data = await response.json() as { results: BasicPhoto[] };
-
-    return { photos: data.results.map(PhotoMapper.toDomain), pagination };
+    });
   }
 
-  async fetchPhotoById(id: string) {
-    const response = await fetch(
-      `https://api.unsplash.com/photos/${id}?client_id=${ACCESS_KEY}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'max-age=604800', // Cache for 1 week
-      },
-      cache: 'force-cache',
+  private parsePaginationLinks(linksHeaderString: string | null): Record<string, number> {
+    if (!linksHeaderString) return {};
+
+    try {
+      return linksHeaderString.split(',').reduce((acc, link) => {
+        const [urlPart, relPart] = link.split(';').map((s) => s.trim());
+        const urlMatch = urlPart.match(/<(.+)>/);
+        const relMatch = relPart.match(/rel="(.+)"/);
+        if (urlMatch && relMatch) {
+          const url = new URL(urlMatch[1]);
+          const page = url.searchParams.get('page');
+          if (page) {
+            acc[relMatch[1]] = Number(page);
+          }
+        }
+        return acc;
+      }, {} as Record<string, number>);
+    } catch (error) {
+      console.error('parsePaginationLinks error:', error);
+      return {};
     }
-    );
-    const data = await response.json() as BasicPhoto;
-    return PhotoMapper.toDomain(data);
+  }
+
+  async fetchPhotos(search: PhotoSearch, options?: { signal: AbortSignal }): Promise<PhotoListResult> {
+    try {
+      const request = this.createRequest(search, options);
+      const response = await fetch(request);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.errors?.join(', ') || response.statusText || 'Unknown error';
+        throw new Error(`Error fetching photos: ${response.status} ${errorMessage}`);
+      }
+
+      const linksHeaderString = response.headers.get('Link');
+      const pagination = this.parsePaginationLinks(linksHeaderString);
+
+      const data = (await response.json()) as { results: BasicPhoto[] };
+      return { photos: data.results.map(PhotoMapper.toDomain), pagination };
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // Request was aborted
+        console.warn('fetchPhotos aborted');
+        throw error;
+      } else if (error instanceof Error) {
+        console.error('fetchPhotos error:', error.message);
+        throw error;
+      } else {
+        console.error('fetchPhotos unknown error:', error);
+        throw new Error('An unknown error occurred while fetching photos.');
+      }
+    }
+  }
+
+  async fetchPhotoById(id: string): Promise<Photo> {
+    try {
+      if (!id || id.trim() === '') {
+        throw new Error('Photo ID cannot be empty.');
+      }
+
+      const url = new URL(`https://api.unsplash.com/photos/${id}`);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Client-ID ${appConfigs.ACCESS_KEY}`,
+        },
+        cache: 'force-cache',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.errors?.join(', ') || response.statusText || 'Unknown error';
+        throw new Error(`Error fetching photo by ID: ${response.status} ${errorMessage}`);
+      }
+
+      const data = (await response.json()) as BasicPhoto;
+      return PhotoMapper.toDomain(data);
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.warn('fetchPhotoById aborted');
+        throw error;
+      } else if (error instanceof Error) {
+        console.error('fetchPhotoById error:', error.message);
+        throw error;
+      } else {
+        console.error('fetchPhotoById unknown error:', error);
+        throw new Error('An unknown error occurred while fetching the photo.');
+      }
+    }
   }
 }
 
@@ -70,3 +140,5 @@ class PhotoMapper {
     };
   }
 }
+
+export const photoRepository = new UnsplashApiAdapter();

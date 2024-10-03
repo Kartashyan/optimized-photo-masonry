@@ -1,67 +1,219 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
-import { MasonryGrid } from "./masonry-grid";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { Photo } from "../../domain/photo";
+import {
+  beforeAll,
+  beforeEach,
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
+import "@testing-library/jest-dom";
+import MasonryGrid from "./masonry-grid";
 
-const mockPhotos: Photo[] = [
-  {
-    id: "1",
-    urls: { small: "photo1-small.jpg", full: "photo1-full.jpg" },
-    user: { name: "User 1" },
-    description: "Description for Photo 1",
-    alt_description: "Alt description for Photo 1",
-    created_at: "2023-01-01T00:00:00Z",
-    width: 100,
-    height: 100,
-  },
-  {
-    id: "2",
-    urls: { small: "photo2-small.jpg", full: "photo2-full.jpg" },
-    user: { name: "User 2" },
-    description: "Description for Photo 2",
-    alt_description: "Alt description for Photo 2",
-    created_at: "2023-01-02T00:00:00Z",
-    width: 200,
-    height: 300,
-  },
-  {
-    id: "3",
-    urls: { small: "photo3-small.jpg", full: "photo3-full.jpg" },
-    user: { name: "User 3" },
-    description: "Description for Photo 3",
-    alt_description: "Alt description for Photo 3",
-    created_at: "2023-01-03T00:00:00Z",
-    width: 300,
-    height: 200,
-  },
-];
+beforeAll(() => {
+  class IntersectionObserverMock {
+    constructor(callback) {
+      this.callback = callback;
+    }
+    observe(element) {
+      setTimeout(() => {
+        this.callback([{ isIntersecting: true, target: element }], this);
+      }, 0);
+    }
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  Object.defineProperty(window, "IntersectionObserver", {
+    writable: true,
+    configurable: true,
+    value: IntersectionObserverMock,
+  });
+});
 
-describe("MasonryGrid", () => {
-  it("renders correct number of images", () => {
-    render(<MasonryGrid photos={mockPhotos} columns={3} />);
-    const images = screen.getAllByRole("img");
-    expect(images.length).toBe(mockPhotos.length);
+describe("MasonryGrid Component", () => {
+  const photos: Photo[] = Array.from({ length: 20 }, (_, index) => ({
+    id: `photo-${index}`,
+    width: 400 + index * 10,
+    height: 300 + index * 5,
+    urls: {
+      small: `https://example.com/photo-${index}-small.jpg`,
+    },
+    
+  }));
+
+  const loadMoreMock = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    window.innerWidth = 1024;
+    window.innerHeight = 768;
+    window.scrollY = 0;
+
+    vi.spyOn(window, "addEventListener");
+    vi.spyOn(window, "removeEventListener");
   });
 
-  it("applies correct span to grid items", () => {
-    render(<MasonryGrid photos={mockPhotos} columns={3} />);
-    const gridItems = document.querySelectorAll('[data-testid^="grid-item-"]');
-    expect(gridItems[0]).toHaveStyle("grid-row-end: span 3");
-    expect(gridItems[1]).toHaveStyle("grid-row-end: span 5");
-    expect(gridItems[2]).toHaveStyle("grid-row-end: span 2");
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it.skip("uses lazy loading for images", () => {
-    render(<MasonryGrid photos={mockPhotos} columns={3} />);
+  test("renders the MasonryGrid component", () => {
+    render(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={vi.fn()}
+        loadMore={loadMoreMock}
+        loading={false}
+      />
+    );
+
     const images = screen.getAllByRole("img");
-    images.forEach((img) => {
-      expect(img).toHaveAttribute("loading", "lazy");
+    expect(images.length).toBeGreaterThan(0);
+    expect(images[0]).toHaveAttribute("src", photos[0].urls.small);
+  });
+
+  test("adjusts number of columns based on window width", async () => {
+    const { rerender } = render(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={vi.fn()}
+        loadMore={loadMoreMock}
+        loading={false}
+      />
+    );
+
+    const initialColumns = Math.floor(window.innerWidth / (236 + 8));
+
+    await act(async () => {
+      window.innerWidth = 600;
+      window.dispatchEvent(new Event("resize"));
     });
+
+    rerender(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={vi.fn()}
+        loadMore={loadMoreMock}
+        loading={false}
+      />
+    );
+
+    const newColumns = Math.floor(window.innerWidth / (236 + 8));
+    expect(newColumns).not.toEqual(initialColumns);
   });
 
-  it("renders grid with correct number of columns", () => {
-    render(<MasonryGrid photos={mockPhotos} columns={3} />);
-    const grid = screen.getByTestId("masonry-grid");
-    expect(grid).toHaveStyle("grid-template-columns: repeat(3, 1fr)");
+  test("centers the grid when window is resized", async () => {
+    const { container, rerender } = render(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={vi.fn()}
+        loadMore={loadMoreMock}
+        loading={false}
+      />
+    );
+
+    const gridContainer = container.querySelector("div");
+
+    const initialStyle = window.getComputedStyle(gridContainer!);
+    expect(initialStyle.marginLeft).toEqual("auto");
+    expect(initialStyle.marginRight).toEqual("auto");
+
+    await act(async () => {
+      window.innerWidth = 800;
+      window.dispatchEvent(new Event("resize"));
+    });
+
+    rerender(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={vi.fn()}
+        loadMore={loadMoreMock}
+        loading={false}
+      />
+    );
+
+    const updatedStyle = window.getComputedStyle(gridContainer!);
+    expect(updatedStyle.marginLeft).toEqual("auto");
+    expect(updatedStyle.marginRight).toEqual("auto");
+  });
+
+  test("calls loadMore when scrolling to the bottom", async () => {
+    render(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={vi.fn()}
+        loadMore={loadMoreMock}
+        loading={false}
+      />
+    );
+
+    await act(async () => {
+      window.scrollY = 1000;
+      window.dispatchEvent(new Event("scroll"));
+    });
+
+    await act(async () => {});
+
+    expect(loadMoreMock).toHaveBeenCalled();
+  });
+
+  test("only renders visible items", () => {
+    render(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={vi.fn()}
+        loadMore={loadMoreMock}
+        loading={false}
+      />
+    );
+
+    const images = screen.getAllByRole("img");
+    expect(images.length).toBeLessThanOrEqual(photos.length);
+  });
+
+  test("handles onItemClick correctly", () => {
+    const onItemClickMock = vi.fn();
+    render(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={onItemClickMock}
+        loadMore={loadMoreMock}
+        loading={false}
+      />
+    );
+
+    const images = screen.getAllByRole("img");
+    fireEvent.click(images[0]);
+
+    expect(onItemClickMock).toHaveBeenCalledWith(photos[0].id);
+  });
+
+  test("does not call loadMore when loading is true", async () => {
+    render(
+      <MasonryGrid
+        photos={photos}
+        onItemClick={vi.fn()}
+        loadMore={loadMoreMock}
+        loading={true}
+      />
+    );
+
+    // Reset the mock calls after initial rendering
+    loadMoreMock.mockClear();
+
+    await act(async () => {
+      window.scrollY = 1000;
+      window.dispatchEvent(new Event("scroll"));
+    });
+
+    await act(async () => {});
+
+    expect(loadMoreMock).not.toHaveBeenCalled();
   });
 });

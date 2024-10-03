@@ -160,7 +160,9 @@ function calculatePositions<T extends { width: number; height: number }>(
   return positions;
 }
 
-const GridContainer = styled.div<{ top: number; gridWidth: number }>`
+const GridContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['gridWidth', 'top'].includes(prop),
+})<{ top: number; gridWidth: number }>`
   position: relative;
   top: ${(props) => props.top}px;
   width: ${(props) => props.gridWidth}px;

@@ -5,8 +5,7 @@ import { BasicPhoto } from "./unsplash";
 
 export class UnsplashApiAdapter implements PhotoRepository {
   private createRequest(search: PhotoSearch, options?: { signal: AbortSignal }): Request {
-    const { per_page = 30, page, query } = search;
-
+    const { per_page = appConfigs.search.perPage, page, query } = search;
     const params = new URLSearchParams({
       per_page: String(per_page),
       page: String(page),

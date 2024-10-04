@@ -64,10 +64,10 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     [allPhotos, columns, columnWidth, gap]
   );
 
-  const totalHeight = useMemo(
-    () => Math.max(...positions.map((pos) => pos.y + pos.height)),
-    [positions]
-  );
+  const totalHeight = useMemo(() => {
+    if (positions.length === 0) return 0;
+    return Math.max(...positions.map((pos) => pos.y + pos.height));
+  }, [positions]);
 
   // Calculate visible items
   const buffer = imageGridConfigs?.lazyLoadOffset || 0; // Extra buffer to load items before they are visible

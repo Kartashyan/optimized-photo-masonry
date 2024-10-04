@@ -9,15 +9,17 @@ jobs:
   lighthouseci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: npm install && npm install -g @lhci/cli@0.14.x
-      - run: npm run build
-      - run: lhci autorun
+      - run: npm install
+      - run: npm run build  # Ensure the app is built first
+      - run: npm run preview &  # Serve the app in the background
+      - run: sleep 12  # Wait a few seconds for the app to fully start
+      - run: lhci autorun  # Run Lighthouse CI audit
         env:
-          LHCI_GITHUB_TOKEN: ${{ secrets.LHCI_GITHUB_TOKEN }} 
+          LHCI_GITHUB_TOKEN: ${{ secrets.LHCI_GITHUB_TOKEN }}
   deploy:
     name: Deploy app
     runs-on: ubuntu-latest

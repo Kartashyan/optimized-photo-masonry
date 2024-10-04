@@ -7,7 +7,8 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { Photo } from "../../domain/photo";
-import { useResizeColumns } from "./hooks/use-resize-columns";
+import { useResizeScreen } from "./hooks/use-resize-columns";
+import { ImageGridConfigs } from "../../infrastructure/app-configs";
 
 interface MasonryGridProps {
   photos: Photo[];
@@ -15,6 +16,7 @@ interface MasonryGridProps {
   loadMore: () => void;
   loading: boolean;
   top?: number;
+  imageGridConfigs?: ImageGridConfigs;
 }
 
 export const MasonryGrid: React.FC<MasonryGridProps> = ({
@@ -23,11 +25,9 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   loadMore,
   loading,
   top = 0,
+  imageGridConfigs,
 }) => {
-  const { columns, columnWidth, gap } = useResizeColumns({
-    columnWidth: 236,
-    gap: 8,
-  });
+  const { columns, columnWidth, gap } = useResizeScreen();
 
   const totalGridWidth = useMemo(
     () => columns * columnWidth + (columns - 1) * gap,
@@ -70,7 +70,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   );
 
   // Calculate visible items
-  const buffer = 200; // Extra buffer to load items before they are visible
+  const buffer = imageGridConfigs?.lazyLoadOffset || 0; // Extra buffer to load items before they are visible
   const visibleStart = scrollTop - buffer;
   const visibleEnd = scrollTop + viewportHeight + buffer;
 
@@ -93,12 +93,12 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
           loadMore();
         }
       }, {
-        rootMargin: "400px",
+        rootMargin: (imageGridConfigs?.loadOffset || 0) + "px",
       }
     );
       if (node) observer.current.observe(node);
     },
-    [loading, loadMore]
+    [loading, loadMore, imageGridConfigs?.loadOffset]
   );
 
   useEffect(() => {
@@ -122,7 +122,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
           height={item.height}
           onClick={() => handleItemClick?.(allPhotos[item.index].id)}
         >
-          <Image src={allPhotos[item.index].urls.small} />
+          <Image loading={imageGridConfigs?.img.loading} src={allPhotos[item.index].urls.small} alt={item.alt_description} />
         </GridItem>
       ))}
       <Sentinel ref={lastItemRef} style={{ top: totalHeight - top }} />

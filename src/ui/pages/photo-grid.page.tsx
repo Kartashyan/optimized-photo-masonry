@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { usePhotosQuery } from "../components/hooks/use-photos-query";
 import { MasonryGrid } from "../components/masonry-grid";
 import { SearchArea } from "../components/search-area";
+import { appConfigs } from "../../infrastructure/app-configs";
 
 
 export const PhotoGridPage: React.FC = () => {
@@ -23,6 +24,7 @@ export const PhotoGridPage: React.FC = () => {
         loadMore={loadMore}
         loading={loading}
         top={120}
+        imageGridConfigs={appConfigs.imageGrid}
       />
       {error && <p>{error.message}</p>}
     </>

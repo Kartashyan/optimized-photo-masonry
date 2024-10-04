@@ -76,7 +76,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = memo(
             />
           </GridItem>
         ))}
-        <Sentinel ref={lastItemRef} style={{ top: totalHeight - top }} />
+        <Sentinel ref={lastItemRef} style={{ top: totalHeight - (top || 0) }} />
       </GridContainer>
     );
   }

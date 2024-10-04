@@ -4,12 +4,13 @@ import App from "../App";
 
 import { LazyPhotoDetailsPage, LazyPhotoGridPage } from "./lazy-components";
 import { Suspense } from "react";
+import ErrorPage from "../ui/components/error-boundaries/error-page";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
-    errorElement: <div>Not Found</div>,
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
@@ -18,16 +19,7 @@ export const router = createBrowserRouter([
             <LazyPhotoGridPage />
           </Suspense>
         ),
-        errorElement: <div>Failed to load photos</div>,
-      },
-      {
-        path: "photos",
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <LazyPhotoGridPage />
-          </Suspense>
-        ),
-        errorElement: <div>Failed to load photos</div>,
+        errorElement: <ErrorPage />,
       },
       {
         path: "photos/:id",
@@ -37,7 +29,7 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
         loader: photoDetailsLoader,
-        errorElement: <div>Failed to load photo</div>,
+        errorElement: <ErrorPage />,
       },
     ],
   },

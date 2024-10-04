@@ -7,7 +7,6 @@ const AppContainer = styled.div`
 
 const App = () => (
   <AppContainer>
-    {/* <h1>Optimized Photo Masonry</h1> */}
     <Outlet />
   </AppContainer>
 );

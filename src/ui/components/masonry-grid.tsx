@@ -1,4 +1,5 @@
 import React, {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -19,116 +20,124 @@ interface MasonryGridProps {
   imageGridConfigs?: ImageGridConfigs;
 }
 
-export const MasonryGrid: React.FC<MasonryGridProps> = ({
-  photos: allPhotos,
-  onItemClick: handleItemClick,
-  loadMore,
-  loading,
-  top = 0,
-  imageGridConfigs,
-}) => {
-  const { columns, columnWidth, gap } = useColumnsCount();
+export const MasonryGrid: React.FC<MasonryGridProps> = memo(
+  ({
+    photos: allPhotos,
+    onItemClick: handleItemClick,
+    loadMore,
+    loading,
+    top = 0,
+    imageGridConfigs,
+  }) => {
+    const { columns, columnWidth, gap } = useColumnsCount();
 
-  const totalGridWidth = useMemo(
-    () => columns * columnWidth + (columns - 1) * gap,
-    [columns, columnWidth, gap]
-  );
-
-  const [scrollTop, setScrollTop] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(0);
-
-  useEffect(() => {
-    const updateViewportHeight = () => {
-      setViewportHeight(window.innerHeight);
-    };
-    updateViewportHeight();
-    window.addEventListener("resize", updateViewportHeight);
-    return () => {
-      window.removeEventListener("resize", updateViewportHeight);
-    };
-  }, []);
-
-  const handleScroll = useCallback(() => {
-    setScrollTop(window.scrollY);
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [handleScroll]);
-
-  const positions = useMemo(
-    () => calculatePositions(allPhotos, columnWidth, columns, gap),
-    [allPhotos, columns, columnWidth, gap]
-  );
-
-  const totalHeight = useMemo(() => {
-    if (positions.length === 0) return 0;
-    return Math.max(...positions.map((pos) => pos.y + pos.height));
-  }, [positions]);
-
-  // Calculate visible items
-  const buffer = imageGridConfigs?.lazyLoadOffset || 0; // Extra buffer to load items before they are visible
-  const visibleStart = scrollTop - buffer;
-  const visibleEnd = scrollTop + viewportHeight + buffer;
-
-  const visiblePositions = useMemo(
-    () =>
-      positions.filter(
-        (pos) => pos.y + pos.height > visibleStart && pos.y < visibleEnd
-      ),
-    [positions, visibleStart, visibleEnd]
-  );
-
-  const observer = useRef<IntersectionObserver | null>(null);
-
-  const lastItemRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (loading) return;
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      }, {
-        rootMargin: (imageGridConfigs?.loadOffset || 0) + "px",
-      }
+    const totalGridWidth = useMemo(
+      () => columns * columnWidth + (columns - 1) * gap,
+      [columns, columnWidth, gap]
     );
-      if (node) observer.current.observe(node);
-    },
-    [loading, loadMore, imageGridConfigs?.loadOffset]
-  );
 
-  useEffect(() => {
-    if (totalHeight < viewportHeight && !loading) {
-      loadMore();
-    }
-  }, [totalHeight, viewportHeight, loading, loadMore]);
+    const [scrollTop, setScrollTop] = useState(0);
+    const [viewportHeight, setViewportHeight] = useState(0);
 
-  return (
-    <GridContainer
-      top={top}
-      gridWidth={totalGridWidth}
-      style={{ height: totalHeight }}
-    >
-      {visiblePositions.map((item) => (
-        <GridItem
-          key={allPhotos[item.index].id}
-          x={item.x}
-          y={item.y}
-          width={item.width}
-          height={item.height}
-          onClick={() => handleItemClick?.(allPhotos[item.index].id)}
-        >
-          <Image loading={imageGridConfigs?.img.loading} src={allPhotos[item.index].urls.small} alt={item.alt_description} />
-        </GridItem>
-      ))}
-      <Sentinel ref={lastItemRef} style={{ top: totalHeight - top }} />
-    </GridContainer>
-  );
-};
+    useEffect(() => {
+      const updateViewportHeight = () => {
+        setViewportHeight(window.innerHeight);
+      };
+      updateViewportHeight();
+      window.addEventListener("resize", updateViewportHeight);
+      return () => {
+        window.removeEventListener("resize", updateViewportHeight);
+      };
+    }, []);
+
+    const handleScroll = useCallback(() => {
+      setScrollTop(window.scrollY);
+    }, []);
+
+    useEffect(() => {
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      return () => {
+        window.removeEventListener("scroll", handleScroll);
+      };
+    }, [handleScroll]);
+
+    const positions = useMemo(
+      () => calculatePositions(allPhotos, columnWidth, columns, gap),
+      [allPhotos, columns, columnWidth, gap]
+    );
+
+    const totalHeight = useMemo(() => {
+      if (positions.length === 0) return 0;
+      return Math.max(...positions.map((pos) => pos.y + pos.height));
+    }, [positions]);
+
+    // Calculate visible items
+    const buffer = imageGridConfigs?.lazyLoadOffset || 0; // Extra buffer to load items before they are visible
+    const visibleStart = scrollTop - buffer;
+    const visibleEnd = scrollTop + viewportHeight + buffer;
+
+    const visiblePositions = useMemo(
+      () =>
+        positions.filter(
+          (pos) => pos.y + pos.height > visibleStart && pos.y < visibleEnd
+        ),
+      [positions, visibleStart, visibleEnd]
+    );
+
+    const observer = useRef<IntersectionObserver | null>(null);
+
+    const lastItemRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        if (loading) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(
+          (entries) => {
+            if (entries[0].isIntersecting) {
+              loadMore();
+            }
+          },
+          {
+            rootMargin: (imageGridConfigs?.loadOffset || 0) + "px",
+          }
+        );
+        if (node) observer.current.observe(node);
+      },
+      [loading, loadMore, imageGridConfigs?.loadOffset]
+    );
+
+    useEffect(() => {
+      if (totalHeight < viewportHeight && !loading) {
+        loadMore();
+      }
+    }, [totalHeight, viewportHeight, loading, loadMore]);
+
+    return (
+      <GridContainer
+        top={top}
+        gridWidth={totalGridWidth}
+        style={{ height: totalHeight }}
+      >
+        {visiblePositions.map((item) => (
+          <GridItem
+            key={allPhotos[item.index].id}
+            x={item.x}
+            y={item.y}
+            width={item.width}
+            height={item.height}
+            onClick={() => handleItemClick?.(allPhotos[item.index].id)}
+          >
+            <Image
+              loading={imageGridConfigs?.img.loading}
+              src={allPhotos[item.index].urls.small}
+              alt={item.alt_description}
+            />
+          </GridItem>
+        ))}
+        <Sentinel ref={lastItemRef} style={{ top: totalHeight - top }} />
+      </GridContainer>
+    );
+  }
+);
 
 export default MasonryGrid;
 
@@ -164,7 +173,7 @@ function calculatePositions<T extends { width: number; height: number }>(
 }
 
 const GridContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['gridWidth', 'top'].includes(prop),
+  shouldForwardProp: (prop) => !["gridWidth", "top"].includes(prop),
 })<{ top: number; gridWidth: number }>`
   position: relative;
   top: ${(props) => props.top}px;
@@ -173,17 +182,15 @@ const GridContainer = styled.div.withConfig({
   transition: width 0.2s ease-in-out;
 `;
 
-const GridItem = styled.div<{
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}>`
+const GridItem = styled.div.attrs<{ x: number; y: number; width: number; height: number }>((props) => ({
+  style: {
+    left: `${props.x}px`,
+    top: `${props.y}px`,
+    width: `${props.width}px`,
+    height: `${props.height}px`,
+  },
+}))`
   position: absolute;
-  left: ${(props) => props.x}px;
-  top: ${(props) => props.y}px;
-  width: ${(props) => props.width}px;
-  height: ${(props) => props.height}px;
   overflow: hidden;
   border-radius: 16px;
 `;

@@ -6,7 +6,7 @@ import { SearchArea } from "../components/search-area";
 import { appConfigs } from "../../infrastructure/app-configs";
 
 
-export const PhotoGridPage: React.FC = () => {
+const PhotoGridPage: React.FC = () => {
   const [searchText, setSearchTesxt] = useState("");
   const { photos, loadMore, loading, error } = usePhotosQuery(searchText);
 
@@ -30,3 +30,5 @@ export const PhotoGridPage: React.FC = () => {
     </>
   );
 };
+
+export default PhotoGridPage;

@@ -6,6 +6,18 @@ on:
     branches:
       - main
 jobs:
+  lighthouseci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm install && npm install -g @lhci/cli@0.14.x
+      - run: npm run build
+      - run: lhci autorun
+        env:
+          LHCI_GITHUB_TOKEN: ${{ secrets.LHCI_GITHUB_TOKEN }} 
   deploy:
     name: Deploy app
     runs-on: ubuntu-latest

@@ -28,3 +28,8 @@ dist-ssr
 
 # Ignore TypeScript incremental build files
 *.tsbuildinfo
+
+# Ignore lightouse reports
+.lighthouseci/
+*.report.html
+*.json

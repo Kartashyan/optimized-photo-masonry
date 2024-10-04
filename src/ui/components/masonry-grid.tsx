@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { Photo } from "../../domain/photo";
-import { useResizeScreen } from "./hooks/use-resize-columns";
+import { useColumnsCount } from "./hooks/use-columns-count";
 import { ImageGridConfigs } from "../../infrastructure/app-configs";
 
 interface MasonryGridProps {
@@ -27,7 +27,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   top = 0,
   imageGridConfigs,
 }) => {
-  const { columns, columnWidth, gap } = useResizeScreen();
+  const { columns, columnWidth, gap } = useColumnsCount();
 
   const totalGridWidth = useMemo(
     () => columns * columnWidth + (columns - 1) * gap,

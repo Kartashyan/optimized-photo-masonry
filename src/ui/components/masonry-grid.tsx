@@ -182,7 +182,12 @@ const GridContainer = styled.div.withConfig({
   transition: width 0.2s ease-in-out;
 `;
 
-const GridItem = styled.div.attrs<{ x: number; y: number; width: number; height: number }>((props) => ({
+const GridItem = styled.div.attrs<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}>((props) => ({
   style: {
     left: `${props.x}px`,
     top: `${props.y}px`,

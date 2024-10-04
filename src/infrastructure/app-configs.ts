@@ -6,6 +6,7 @@ export const appConfigs = {
   ACCESS_KEY,
   API_URL,
   search: {
+    defaultQuery: 'sky',
     perPage: 30,
     orderBy: 'latest',
     debounceDelay: 300,

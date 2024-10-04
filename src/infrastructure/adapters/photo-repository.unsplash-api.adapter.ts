@@ -9,7 +9,7 @@ export class UnsplashApiAdapter implements PhotoRepository {
     const params = new URLSearchParams({
       per_page: String(per_page),
       page: String(page),
-      query: query.trim() || "cats",
+      query: query.trim() || appConfigs.search.defaultQuery,
     });
 
     const url = new URL(appConfigs.API_URL);

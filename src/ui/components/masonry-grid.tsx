@@ -1,15 +1,14 @@
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { memo } from "react";
 import styled from "styled-components";
 import { Photo } from "../../domain/photo";
 import { useColumnsCount } from "./hooks/use-columns-count";
 import { ImageGridConfigs } from "../../infrastructure/app-configs";
+import { useScrollPosition } from "./hooks/use-scroll-position";
+import { usePositions } from "./hooks/use-positions";
+import { useTotalHeight } from "./hooks/use-total-height";
+import { useVisiblePositions } from "./hooks/use-visible-positions";
+import { useInfiniteScroll } from "./hooks/use-infinite-scroll";
+import { useLoadMoreOnShortPage } from "./hooks/use-load-more-on-short-page";
 
 interface MasonryGridProps {
   photos: Photo[];
@@ -31,85 +30,29 @@ export const MasonryGrid: React.FC<MasonryGridProps> = memo(
   }) => {
     const { columns, columnWidth, gap } = useColumnsCount();
 
-    const totalGridWidth = useMemo(
+    const totalGridWidth = React.useMemo(
       () => columns * columnWidth + (columns - 1) * gap,
       [columns, columnWidth, gap]
     );
 
-    const [scrollTop, setScrollTop] = useState(0);
-    const [viewportHeight, setViewportHeight] = useState(0);
+    const { scrollTop, viewportHeight } = useScrollPosition();
 
-    useEffect(() => {
-      const updateViewportHeight = () => {
-        setViewportHeight(window.innerHeight);
-      };
-      updateViewportHeight();
-      window.addEventListener("resize", updateViewportHeight);
-      return () => {
-        window.removeEventListener("resize", updateViewportHeight);
-      };
-    }, []);
+    const positions = usePositions(allPhotos, columnWidth, columns, gap);
 
-    const handleScroll = useCallback(() => {
-      setScrollTop(window.scrollY);
-    }, []);
+    const totalHeight = useTotalHeight(positions);
 
-    useEffect(() => {
-      window.addEventListener("scroll", handleScroll, { passive: true });
-      return () => {
-        window.removeEventListener("scroll", handleScroll);
-      };
-    }, [handleScroll]);
-
-    const positions = useMemo(
-      () => calculatePositions(allPhotos, columnWidth, columns, gap),
-      [allPhotos, columns, columnWidth, gap]
+    const buffer = imageGridConfigs?.lazyLoadOffset || 0;
+    const visiblePositions = useVisiblePositions(
+      positions,
+      scrollTop,
+      viewportHeight,
+      buffer
     );
 
-    const totalHeight = useMemo(() => {
-      if (positions.length === 0) return 0;
-      return Math.max(...positions.map((pos) => pos.y + pos.height));
-    }, [positions]);
+    const loadOffset = imageGridConfigs?.loadOffset || 0;
+    const lastItemRef = useInfiniteScroll(loading, loadMore, loadOffset);
 
-    // Calculate visible items
-    const buffer = imageGridConfigs?.lazyLoadOffset || 0; // Extra buffer to load items before they are visible
-    const visibleStart = scrollTop - buffer;
-    const visibleEnd = scrollTop + viewportHeight + buffer;
-
-    const visiblePositions = useMemo(
-      () =>
-        positions.filter(
-          (pos) => pos.y + pos.height > visibleStart && pos.y < visibleEnd
-        ),
-      [positions, visibleStart, visibleEnd]
-    );
-
-    const observer = useRef<IntersectionObserver | null>(null);
-
-    const lastItemRef = useCallback(
-      (node: HTMLDivElement | null) => {
-        if (loading) return;
-        if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver(
-          (entries) => {
-            if (entries[0].isIntersecting) {
-              loadMore();
-            }
-          },
-          {
-            rootMargin: (imageGridConfigs?.loadOffset || 0) + "px",
-          }
-        );
-        if (node) observer.current.observe(node);
-      },
-      [loading, loadMore, imageGridConfigs?.loadOffset]
-    );
-
-    useEffect(() => {
-      if (totalHeight < viewportHeight && !loading) {
-        loadMore();
-      }
-    }, [totalHeight, viewportHeight, loading, loadMore]);
+    useLoadMoreOnShortPage(totalHeight, viewportHeight, loading, loadMore);
 
     return (
       <GridContainer
@@ -141,37 +84,6 @@ export const MasonryGrid: React.FC<MasonryGridProps> = memo(
 
 export default MasonryGrid;
 
-function calculatePositions<T extends { width: number; height: number }>(
-  items: T[],
-  columnWidth: number,
-  columnCount: number,
-  gap: number
-) {
-  const columnHeights = Array<number>(columnCount).fill(0); // Keep track of column heights
-  const positions = items.map((item, index) => {
-    const aspectRatio = item.width / item.height;
-    const height = columnWidth / aspectRatio;
-
-    const column = columnHeights.indexOf(Math.min(...columnHeights)); // Shortest column
-
-    const x = column * (columnWidth + gap);
-    const y = columnHeights[column];
-
-    columnHeights[column] += height + gap; // Update column height
-
-    return {
-      ...item,
-      index,
-      x,
-      y,
-      width: columnWidth,
-      height,
-    };
-  });
-
-  return positions;
-}
-
 const GridContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !["gridWidth", "top"].includes(prop),
 })<{ top: number; gridWidth: number }>`
@@ -182,19 +94,18 @@ const GridContainer = styled.div.withConfig({
   transition: width 0.2s ease-in-out;
 `;
 
-const GridItem = styled.div.attrs<{
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}>((props) => ({
-  style: {
-    left: `${props.x}px`,
-    top: `${props.y}px`,
-    width: `${props.width}px`,
-    height: `${props.height}px`,
-  },
-}))`
+const GridItem = styled.div
+  .withConfig({
+    shouldForwardProp: (prop) => !["x", "y", "width", "height"].includes(prop),
+  })
+  .attrs<{ x: number; y: number; width: number; height: number }>((props) => ({
+    style: {
+      left: `${props.x}px`,
+      top: `${props.y}px`,
+      width: `${props.width}px`,
+      height: `${props.height}px`,
+    },
+  }))`
   position: absolute;
   overflow: hidden;
   border-radius: 16px;

@@ -3,16 +3,16 @@ import { Photo } from "../../../domain/photo";
 import { useDebounce } from "./use-debounce";
 import { photoService } from "../../../services/photo.service";
 import { type Pagination } from './../../../domain/ports/photo-repository.port';
-import { appConfigs } from "../../../infrastructure/app-configs";
+import { AppConfigs } from "../../../infrastructure/app-configs";
 
-export const usePhotosQuery = (query: string) => {
+export const usePhotosQuery = (query: string, configs: AppConfigs) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [page, setPage] = useState<number>(1);
   const [pagination, setPagination] = useState<Pagination | null>(null);
 
-  const debouncedQuery = useDebounce(query, appConfigs.search.debounceDelay);
+  const debouncedQuery = useDebounce(query, configs.search.debounceDelay);
 
   useEffect(() => {
     setPhotos([]);
@@ -30,7 +30,7 @@ export const usePhotosQuery = (query: string) => {
       try {
         const result = await photoService.fetchPhotos(
           { page, query: debouncedQuery },
-          { signal: abortController.signal }
+          { signal: abortController.signal, configs }
         );
 
         setPhotos((prevPhotos) => [...prevPhotos, ...result.photos]);
@@ -56,7 +56,7 @@ export const usePhotosQuery = (query: string) => {
     return () => {
       abortController.abort();
     };
-  }, [debouncedQuery, page]);
+  }, [debouncedQuery, page, configs]);
 
   const loadMore = () => {
     if (pagination?.next) {

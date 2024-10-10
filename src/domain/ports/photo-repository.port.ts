@@ -1,3 +1,4 @@
+import { AppConfigs } from "../../infrastructure/app-configs";
 import { Photo } from "../photo";
 
 export type Pagination = Record<string, number>;
@@ -11,6 +12,6 @@ export type PhotoSearch = {
 };
 
 export interface PhotoRepository {
-  fetchPhotos(search: PhotoSearch, options?: { signal: AbortSignal }): Promise<FetchListResult<Photo>>;
-  fetchPhotoById(id: string): Promise<Photo>;
+  fetchPhotos(search: PhotoSearch, options: { signal: AbortSignal; configs: AppConfigs }): Promise<FetchListResult<Photo>>;
+  fetchPhotoById(id: string, configs: AppConfigs): Promise<Photo>;
 }

@@ -1,6 +1,7 @@
 import { Photo } from "../domain/photo";
 import { PhotoRepository, PhotoListResult } from "../domain/ports/photo-repository.port";
 import { UnsplashApiAdapter } from "../infrastructure/adapters/photo-repository.unsplash-api.adapter";
+import { AppConfigs } from "../infrastructure/app-configs";
 
 export class PhotoService {
   constructor(private photoRepository: PhotoRepository) {
@@ -10,12 +11,12 @@ export class PhotoService {
     page: number;
     query: string;
     per_page?: number;
-  }, options?: { signal: AbortSignal }): Promise<PhotoListResult> {
+  }, options: { signal: AbortSignal; configs: AppConfigs }): Promise<PhotoListResult> {
     return this.photoRepository.fetchPhotos(search, options);
   }
 
-  async fetchPhotoById(id: string): Promise<Photo> {
-    return this.photoRepository.fetchPhotoById(id);
+  async fetchPhotoById(id: string, configs: AppConfigs): Promise<Photo> {
+    return this.photoRepository.fetchPhotoById(id, configs);
   }
 }
 

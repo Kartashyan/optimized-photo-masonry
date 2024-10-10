@@ -1,26 +1,26 @@
-import { appConfigs } from './../app-configs';
+import { AppConfigs } from './../app-configs';
 import { Photo } from "../../domain/photo";
 import { PhotoListResult, PhotoRepository, PhotoSearch } from "../../domain/ports/photo-repository.port";
 import { BasicPhoto } from "./unsplash";
 
 export class UnsplashApiAdapter implements PhotoRepository {
-  private createRequest(search: PhotoSearch, options?: { signal: AbortSignal }): Request {
-    const { per_page = appConfigs.search.perPage, page, query } = search;
+  private createRequest(search: PhotoSearch, {signal, configs}: { signal: AbortSignal, configs: AppConfigs }): Request {
+    const { per_page = configs.search.perPage, page, query } = search;
     const params = new URLSearchParams({
       per_page: String(per_page),
       page: String(page),
-      query: query.trim() || appConfigs.search.defaultQuery,
+      query: query.trim() || configs.search.defaultQuery,
     });
 
-    const url = new URL(appConfigs.API_URL);
+    const url = new URL(configs.API_URL);
     url.search = params.toString();
 
     return new Request(url.toString(), {
       method: 'GET',
-      signal: options?.signal,
+      signal: signal,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Client-ID ${appConfigs.ACCESS_KEY}`,
+        'Authorization': `Client-ID ${configs.ACCESS_KEY}`,
         'Cache-Control': 'max-age=604800', // 1 week
       },
     });
@@ -49,7 +49,7 @@ export class UnsplashApiAdapter implements PhotoRepository {
     }
   }
 
-  async fetchPhotos(search: PhotoSearch, options?: { signal: AbortSignal }): Promise<PhotoListResult> {
+  async fetchPhotos(search: PhotoSearch, options: { signal: AbortSignal; configs: AppConfigs }): Promise<PhotoListResult> {
     try {
       const request = this.createRequest(search, options);
       const response = await fetch(request);
@@ -80,7 +80,7 @@ export class UnsplashApiAdapter implements PhotoRepository {
     }
   }
 
-  async fetchPhotoById(id: string): Promise<Photo> {
+  async fetchPhotoById(id: string, configs: AppConfigs): Promise<Photo> {
     try {
       if (!id || id.trim() === '') {
         throw new Error('Photo ID cannot be empty.');
@@ -92,7 +92,7 @@ export class UnsplashApiAdapter implements PhotoRepository {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Client-ID ${appConfigs.ACCESS_KEY}`,
+          'Authorization': `Client-ID ${configs.ACCESS_KEY}`,
         },
         cache: 'force-cache',
       });

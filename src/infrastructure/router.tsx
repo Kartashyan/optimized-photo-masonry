@@ -31,13 +31,6 @@ export const router = createBrowserRouter([
         loader: photoDetailsLoader,
         errorElement: <ErrorPage />,
       },
-      {
-        path: "settings",
-        async lazy() {
-          const { SettingsPage } = await import("../ui/pages/settings.page");
-          return { Component: SettingsPage };
-        },
-      }
     ],
   },
 ]);

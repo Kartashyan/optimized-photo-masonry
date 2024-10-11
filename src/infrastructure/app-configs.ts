@@ -1,5 +1,5 @@
 
-const ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY as string;
+const ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 const API_URL = "https://api.unsplash.com/search/photos";
 
 export const appConfigs = {
@@ -25,3 +25,6 @@ export const appConfigs = {
 export type AppConfigs = typeof appConfigs;
 export type ImageGridConfigs = AppConfigs['imageGrid'];
 
+if (!ACCESS_KEY) {
+  throw new Error('Unsplash access key is missing');
+}

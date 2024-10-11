@@ -1,4 +1,4 @@
-import { useContext, useRef } from "react";
+import { useContext, useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { AppConfigsContext, AppConfigsDispatchContext } from "../components/contexts/configs-context";
@@ -49,6 +49,10 @@ const Button = styled.button`
   &:hover {
     background-color: #0056b3;
   }
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
 `;
 
 const StyledLink = styled(Link)`
@@ -63,40 +67,72 @@ const StyledLink = styled(Link)`
   &:hover {
     background-color: #0056b3;
   }
+  &:disabled {
+    background-color: #ccc;
+    pointer-events: none;
+  }
 `;
 
 export const SettingsPage: React.FC = () => {
   const appSettings = useContext(AppConfigsContext);
   const dispatch = useContext(AppConfigsDispatchContext);
 
-  const keyRef = useRef<HTMLInputElement>(null);
-  const defaultQueryRef = useRef<HTMLInputElement>(null);
-  const perPageRef = useRef<HTMLInputElement>(null);
-  const orderByRef = useRef<HTMLInputElement>(null);
-  const debounceDelayRef = useRef<HTMLInputElement>(null);
-  const columnWidthRef = useRef<HTMLInputElement>(null);
-  const gapRef = useRef<HTMLInputElement>(null);
-  const lazyLoadOffsetRef = useRef<HTMLInputElement>(null);
-  const loadOffsetRef = useRef<HTMLInputElement>(null);
+  const [formState, setFormState] = useState({
+    accessKey: appSettings.ACCESS_KEY,
+    defaultQuery: appSettings.search.defaultQuery,
+    perPage: appSettings.search.perPage,
+    orderBy: appSettings.search.orderBy,
+    debounceDelay: appSettings.search.debounceDelay,
+    columnWidth: appSettings.imageGrid.columnWidth,
+    gap: appSettings.imageGrid.gap,
+    lazyLoadOffset: appSettings.imageGrid.lazyLoadOffset,
+    loadOffset: appSettings.imageGrid.loadOffset,
+  });
 
-  const updateConfigs = () => {
+  const [isChanged, setIsChanged] = useState(false);
+
+  useEffect(() => {
+    setIsChanged(
+      formState.accessKey !== appSettings.ACCESS_KEY ||
+      formState.defaultQuery !== appSettings.search.defaultQuery ||
+      formState.perPage !== appSettings.search.perPage ||
+      formState.orderBy !== appSettings.search.orderBy ||
+      formState.debounceDelay !== appSettings.search.debounceDelay ||
+      formState.columnWidth !== appSettings.imageGrid.columnWidth ||
+      formState.gap !== appSettings.imageGrid.gap ||
+      formState.lazyLoadOffset !== appSettings.imageGrid.lazyLoadOffset ||
+      formState.loadOffset !== appSettings.imageGrid.loadOffset
+    );
+  }, [formState, appSettings]);
+
+  const updateConfigs = useCallback(() => {
     const updatedConfigs = {
-      ACCESS_KEY: keyRef.current?.value || appSettings.ACCESS_KEY,
+      ACCESS_KEY: formState.accessKey,
       search: {
-        defaultQuery: defaultQueryRef.current?.value || appSettings.search.defaultQuery,
-        perPage: perPageRef.current?.valueAsNumber || appSettings.search.perPage,
-        orderBy: orderByRef.current?.value || appSettings.search.orderBy,
-        debounceDelay: debounceDelayRef.current?.valueAsNumber || appSettings.search.debounceDelay,
+        defaultQuery: formState.defaultQuery,
+        perPage: formState.perPage,
+        orderBy: formState.orderBy,
+        debounceDelay: formState.debounceDelay,
       },
       imageGrid: {
-        columnWidth: columnWidthRef.current?.valueAsNumber || appSettings.imageGrid.columnWidth,
-        gap: gapRef.current?.valueAsNumber || appSettings.imageGrid.gap,
-        lazyLoadOffset: lazyLoadOffsetRef.current?.valueAsNumber || appSettings.imageGrid.lazyLoadOffset,
-        loadOffset: loadOffsetRef.current?.valueAsNumber || appSettings.imageGrid.loadOffset,
-        img: appSettings.imageGrid.img,
+        columnWidth: formState.columnWidth,
+        gap: formState.gap,
+        lazyLoadOffset: formState.lazyLoadOffset,
+        loadOffset: formState.loadOffset,
+        img: {
+          loading: "lazy",
+        } as Pick<HTMLImageElement, "loading">,
       },
     };
     dispatch({ type: 'UPDATE_CONFIGS', payload: updatedConfigs });
+  }, [formState, dispatch]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    setFormState(prevState => ({
+      ...prevState,
+      [name]: type === 'number' ? Number(value) : value,
+    }));
   };
 
   return (
@@ -104,42 +140,46 @@ export const SettingsPage: React.FC = () => {
       <Title>Settings</Title>
       <FormGroup>
         <Label>API Access Key:</Label>
-        <Input ref={keyRef} defaultValue={appSettings.ACCESS_KEY} />
+        <Input name="accessKey" value={formState.accessKey} onChange={handleChange} />
       </FormGroup>
       <FormGroup>
         <Label>Default Query:</Label>
-        <Input ref={defaultQueryRef} defaultValue={appSettings.search.defaultQuery} />
+        <Input name="defaultQuery" value={formState.defaultQuery} onChange={handleChange} />
       </FormGroup>
       <FormGroup>
         <Label>Per Page:</Label>
-        <Input type="number" ref={perPageRef} defaultValue={appSettings.search.perPage} />
+        <Input type="number" name="perPage" value={formState.perPage} onChange={handleChange} />
       </FormGroup>
       <FormGroup>
         <Label>Order By:</Label>
-        <Input ref={orderByRef} defaultValue={appSettings.search.orderBy} />
+        <Input name="orderBy" value={formState.orderBy} onChange={handleChange} />
       </FormGroup>
       <FormGroup>
         <Label>Debounce Delay:</Label>
-        <Input type="number" ref={debounceDelayRef} defaultValue={appSettings.search.debounceDelay} />
+        <Input type="number" name="debounceDelay" value={formState.debounceDelay} onChange={handleChange} />
       </FormGroup>
       <FormGroup>
         <Label>Image Grid Columns:</Label>
-        <Input type="number" ref={columnWidthRef} defaultValue={appSettings.imageGrid.columnWidth} />
+        <Input type="number" name="columnWidth" value={formState.columnWidth} onChange={handleChange} />
       </FormGroup>
       <FormGroup>
         <Label>Image Grid Gap:</Label>
-        <Input type="number" ref={gapRef} defaultValue={appSettings.imageGrid.gap} />
+        <Input type="number" name="gap" value={formState.gap} onChange={handleChange} />
       </FormGroup>
       <FormGroup>
         <Label>Lazy Load Offset:</Label>
-        <Input type="number" ref={lazyLoadOffsetRef} defaultValue={appSettings.imageGrid.lazyLoadOffset} />
+        <Input type="number" name="lazyLoadOffset" value={formState.lazyLoadOffset} onChange={handleChange} />
       </FormGroup>
       <FormGroup>
         <Label>Load Offset:</Label>
-        <Input type="number" ref={loadOffsetRef} defaultValue={appSettings.imageGrid.loadOffset} />
+        <Input type="number" name="loadOffset" value={formState.loadOffset} onChange={handleChange} />
       </FormGroup>
-      <Button onClick={updateConfigs}>Update Configs</Button>
-      <StyledLink to="/">Go to Photos Page</StyledLink>
+      <Button onClick={updateConfigs} disabled={!isChanged}>Update Configs</Button>
+      {formState.accessKey ? (
+        <StyledLink to="/">Go to Photos Page</StyledLink>
+      ) : (
+        <span style={{ display: 'inline-block', marginTop: '20px', padding: '10px 20px', backgroundColor: '#ccc', color: 'white', textDecoration: 'none', borderRadius: '4px', textAlign: 'center', pointerEvents: 'none' }}>Go to Photos Page</span>
+      )}
     </PageContainer>
   );
 }

@@ -1,16 +1,16 @@
 import React, { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router-dom";
 import { usePhotosQuery } from "../components/hooks/use-photos-query";
 import { MasonryGrid } from "../components/masonry-grid";
 import { SearchArea } from "../components/search-area";
 import { appConfigs } from "../../infrastructure/app-configs";
 
-const PhotoGridPage: React.FC = () => {
+export const Component: React.FC = () => {
   const [searchText, setSearchText] = useState("");
   const { photos, loadMore, loading, error } = usePhotosQuery(searchText);
 
   const navigate = useNavigate();
-
+  
   const handlePhotoClick = useCallback(
     (id: string) => {
       navigate(`/photos/${id}`);
@@ -38,5 +38,21 @@ const PhotoGridPage: React.FC = () => {
     </>
   );
 };
+Component.displayName = "PhotoGridPage";
 
-export default PhotoGridPage;
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  return isRouteErrorResponse(error) ? (
+    <h1>
+      {error.status} {error.statusText}
+    </h1>
+  ) : (
+    error instanceof Error ? (
+      <h1>{error.message}</h1>
+    ) : (
+      <h1>Unknown error</h1>
+    )
+  );
+}
+

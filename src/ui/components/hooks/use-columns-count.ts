@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
+import { appConfigs } from "../../../infrastructure/app-configs";
 
-export function useResizeColumns({
-  columnWidth,
-  gap
-}: {
+export function useColumnsCount(options: {
   columnWidth: number;
   gap: number;
-} = { columnWidth: 236, gap: 8 }) {
+} | undefined = { columnWidth: appConfigs.imageGrid.columnWidth, gap: appConfigs.imageGrid.gap }) {
+  const { columnWidth, gap } = options;
 
   const [columns, setColumns] = useState(
     Math.floor(window.innerWidth / (columnWidth + gap))

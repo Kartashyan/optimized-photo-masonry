@@ -3,6 +3,7 @@ import { Photo } from "../../../domain/photo";
 import { useDebounce } from "./use-debounce";
 import { photoService } from "../../../services/photo.service";
 import { type Pagination } from './../../../domain/ports/photo-repository.port';
+import { appConfigs } from "../../../infrastructure/app-configs";
 
 export const usePhotosQuery = (query: string) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -11,7 +12,7 @@ export const usePhotosQuery = (query: string) => {
   const [page, setPage] = useState<number>(1);
   const [pagination, setPagination] = useState<Pagination | null>(null);
 
-  const debouncedQuery = useDebounce(query, 500);
+  const debouncedQuery = useDebounce(query, appConfigs.search.debounceDelay);
 
   useEffect(() => {
     setPhotos([]);

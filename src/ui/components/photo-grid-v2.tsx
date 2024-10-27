@@ -10,7 +10,7 @@ import { useVisiblePositions } from "./hooks/use-visible-positions";
 import { useInfiniteScroll } from "./hooks/use-infinite-scroll";
 import { useLoadMoreOnShortPage } from "./hooks/use-load-more-on-short-page";
 
-interface MasonryGridProps {
+interface PhotoGrid {
   photos: Photo[];
   onItemClick?: (id: Photo["id"]) => void;
   loadMore: () => void;
@@ -19,7 +19,7 @@ interface MasonryGridProps {
   imageGridConfigs?: ImageGridConfigs;
 }
 
-export const MasonryGrid: React.FC<MasonryGridProps> = memo(
+export const MasonryGrid: React.FC<PhotoGrid> = memo(
   ({
     photos: allPhotos,
     onItemClick: handleItemClick,
@@ -63,8 +63,8 @@ export const MasonryGrid: React.FC<MasonryGridProps> = memo(
         {visiblePositions.map((item) => (
           <GridItem
             key={allPhotos[item.index].id}
-            x={item.x}
-            y={item.y}
+            left={item.x}
+            top={item.y}
             width={item.width}
             height={item.height}
             onClick={() => handleItemClick?.(allPhotos[item.index].id)}
@@ -96,12 +96,12 @@ const GridContainer = styled.div.withConfig({
 
 const GridItem = styled.div
   .withConfig({
-    shouldForwardProp: (prop) => !["x", "y", "width", "height"].includes(prop),
+    shouldForwardProp: (prop) => !["left", "top", "width", "height"].includes(prop),
   })
-  .attrs<{ x: number; y: number; width: number; height: number }>((props) => ({
+  .attrs<{ left: number; top: number; width: number; height: number }>((props) => ({
     style: {
-      left: `${props.x}px`,
-      top: `${props.y}px`,
+      left: `${props.left}px`,
+      top: `${props.top}px`,
       width: `${props.width}px`,
       height: `${props.height}px`,
     },

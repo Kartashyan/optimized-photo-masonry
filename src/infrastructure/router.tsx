@@ -1,30 +1,35 @@
 import { createBrowserRouter } from "react-router-dom";
 import { loader as photoDetailsLoader } from "./photo-details.loader";
 import App from "../App";
-import { PhotoGridPage } from "../ui/pages/photo-grid.page";
-import { PhotoDetailsPage } from "../ui/pages/photo-details.page";
+
+import { LazyPhotoDetailsPage, LazyPhotoGridPage } from "./lazy-components";
+import { Suspense } from "react";
+import ErrorPage from "../ui/components/error-boundaries/error-page";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
-    errorElement: <div>Not Found</div>,
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
-        element: <PhotoGridPage />,
-        errorElement: <div>Failed to load photos</div>,
-      },
-      {
-        path: "photos",
-        element: <PhotoGridPage />,
-        errorElement: <div>Failed to load photos</div>,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <LazyPhotoGridPage />
+          </Suspense>
+        ),
+        errorElement: <ErrorPage />,
       },
       {
         path: "photos/:id",
-        element: <PhotoDetailsPage />,
+        element: (
+          <Suspense fallback={<div>Loading...</div>}>
+            <LazyPhotoDetailsPage />
+          </Suspense>
+        ),
         loader: photoDetailsLoader,
-        errorElement: <div>Failed to load photo</div>,
+        errorElement: <ErrorPage />,
       },
     ],
   },

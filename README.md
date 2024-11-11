@@ -4,8 +4,6 @@
 
 This project is a Single Page Application (SPA) built with **React** and **TypeScript**. It showcases a responsive, optimized, and virtualized masonry grid layout that fetches photos from the **Unsplash API**. Users can search for photos by keywords, view them in a dynamic grid, and access detailed information for each photo.
 
-**Live Demo**: [https://optimized-photo-masonry.fly.dev/](https://optimized-photo-masonry.fly.dev/)
-
 ## Features
 
 - **Virtualized Masonry Grid Layout**: A responsive grid that efficiently renders only the visible photos, improving performance.
